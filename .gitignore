@@ -3,3 +3,4 @@ venv/
 .vscode/
 models/
 alwaysai.project.json
+alwaysai.target.json
