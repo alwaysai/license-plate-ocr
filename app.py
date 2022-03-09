@@ -14,18 +14,13 @@ https://dashboard.alwaysai.co/docs/application_development/changing_the_engine_a
 
 
 def main():
-    # The current frame index
-    frame_idx = 0
-    # The number of frames to skip before running detector
-    detect_period = 30
-
     # Load the object detection model
     obj_detect = edgeiq.ObjectDetection(
         "alwaysai/vehicle_license_mobilenet_ssd")
     obj_detect.load(engine=edgeiq.Engine.DNN)
 
     # Load the tracker to reduce tracking burden
-    tracker = edgeiq.CorrelationTracker(max_objects=5)
+    tracker = edgeiq.CentroidTracker()
     fps = edgeiq.FPS()
 
     # Load the OCR reader
@@ -58,53 +53,41 @@ def main():
                     frame = video_stream.read()
                     predictions = []
 
-                    # if using new detections, update 'predictions'
-                    if frame_idx % detect_period == 0:
-                        results = obj_detect.detect_objects(
-                            frame, confidence_level=.5)
-                        frame = edgeiq.markup_image(
-                            frame, results.predictions, colors=obj_detect.colors)
+                    results = obj_detect.detect_objects(
+                        frame, confidence_level=.5)
+                    frame = edgeiq.markup_image(
+                        frame, results.predictions, colors=obj_detect.colors)
 
-                        # Generate text to display on streamer
-                        text = ["Model: {}".format(obj_detect.model_id)]
-                        text.append(
-                            "Inference time: {:1.3f} s".format(results.duration))
-                        text.append("Objects:")
+                    # Generate text to display on streamer
+                    text = ["Model: {}".format(obj_detect.model_id)]
+                    text.append(
+                        "Inference time: {:1.3f} s".format(results.duration))
+                    text.append("Objects:")
 
-                        # Stop tracking old objects
-                        if tracker.count:
-                            tracker.stop_all()
+                    objects = tracker.update(results.predictions)
 
-                        predictions = results.predictions
+                    for (object_id, prediction) in objects.items():
+                        text.append("{}_{}: {:2.2f}%".format(
+                            prediction.label,
+                            object_id,
+                            prediction.confidence * 100))
 
-                        # use 'number' to identify unique objects
-                        number = 0
-                        for prediction in predictions:
-                            number = number + 1
-                            text.append("{}_{}: {:2.2f}%".format(
-                                prediction.label, number, prediction.confidence * 100))
-                            tracker.start(frame, prediction)
+                        if(prediction.label == "license_plate"):
+                            license_image = edgeiq.cutout_image(
+                                frame, prediction.box)
 
-                            if(prediction.label == "license_plate"):
-                                license_image = edgeiq.cutout_image(
-                                    frame, prediction.box)
+                            try:
+                                output = reader.readtext(
+                                    license_image, detail=0)
+                                print(
+                                    f'{prediction.label}_{object_id}: {output}'
+                                    )
+                                text.append('{}_{} reads: {}'.format(
+                                    prediction.label, object_id, output))
 
-                                try:
-                                    output = reader.readtext(
-                                        license_image, detail=0)
-                                    print(f'{prediction.label}_{number}: {output}')
-                                    text.append('{}_{} reads: {}'.format(prediction.label, number, output))
-
-                                except Exception as e:
-                                    print(
-                                        f'app.py: Error processing image through OCR lib: ERROR: {e}')
-
-                            tracker.start(frame, prediction)
-
-                    else:
-                        # otherwise, set 'predictions' to the tracked predictions
-                        if tracker.count:
-                            predictions = tracker.update(frame)
+                            except Exception as e:
+                                print(
+                                    f'app.py: Error processing image through OCR lib: ERROR: {e}')
 
                     # either way, use 'predictions' to mark up the image and update text
                     frame = edgeiq.markup_image(
@@ -112,7 +95,6 @@ def main():
                         show_confidences=False, colors=obj_detect.colors)
 
                     streamer.send_data(frame, text)
-                    frame_idx += 1
 
                     fps.update()
 
