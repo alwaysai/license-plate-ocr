@@ -1,5 +1,5 @@
 # License Plate OCR App
-This app uses object detection and employs a correlation tracker to monitor a frame for license plates and vehicles and then uses an OCR library to read the license plates. This app will work on development machines, such as MacOS and Windows, but not on ARM 64 architectures due to the dependency on PyTorch.
+This app uses object detection and employs a centroid tracker to monitor a frame for license plates and vehicles and then uses an OCR library to read the license plates. This app will work on development machines, such as MacOS and Windows, but not on ARM 64 architectures due to the dependency on PyTorch. Note that we have provided the model file that EasyOCR provides at runtime to avoid model download issues. We have only provided the necessary files for the English option. If you would like to explore other uses of the EasyOCR library, please see the source: https://github.com/JaidedAI/EasyOCR/tree/393c2d966aa37160bcfdef5f55ba50daff994409. There is a link to the JaidedAI Model Hub on the repository's README.
 
 ![image](./static/streamer.png)
 

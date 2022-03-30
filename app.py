@@ -1,6 +1,7 @@
 import time
 import edgeiq
 import easyocr
+import os
 
 """
 Use object detection to detect and read automotive license plates in the frame in realtime.
@@ -24,7 +25,12 @@ def main():
     fps = edgeiq.FPS()
 
     # Load the OCR reader
-    reader = easyocr.Reader(['en'], gpu=False)
+    reader = easyocr.Reader(
+        ['en'],
+        gpu=False,
+        download_enabled=False,
+        model_storage_directory='easy_ocr_model',
+        user_network_directory=os.getcwd())
 
     # Console output
     print("Loaded model:\n{}\n".format(obj_detect.model_id))
