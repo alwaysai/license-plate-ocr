@@ -26,6 +26,7 @@ If you encounter issues with `aai app install` please see the the configuration 
 ## Support
 Docs: https://dashboard.alwaysai.co/docs/getting_started/introduction.html
 
-Community Discord: https://discord.gg/rjDdRPT
+Community Discord: https://discord.gg/alwaysai
 
 Email: support@alwaysai.co
+
